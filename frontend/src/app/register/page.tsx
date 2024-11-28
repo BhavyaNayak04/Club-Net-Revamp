@@ -1,7 +1,5 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,9 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Loading from "@/components/ui/loading";
-import useAuth from "@/hooks/useAuth";
-import { ToastContainer, toast } from "react-toastify";
 
 const createAccountSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -26,7 +21,6 @@ const createAccountSchema = z.object({
 });
 
 export default function Register() {
-  const { login, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -35,13 +29,9 @@ export default function Register() {
     name?: string;
     password?: string;
   }>({});
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     const result = createAccountSchema.safeParse({ email, name, password });
-
     if (!result.success) {
       const fieldErrors = result.error.format();
       setErrors({
@@ -51,63 +41,7 @@ export default function Register() {
       });
       return;
     }
-
-    setErrors({});
-
-    const credentials = {
-      email,
-      name,
-      password,
-    };
-
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8080/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (response.ok) {
-        const contentType = response.headers.get("content-type");
-        let data;
-        if (contentType && contentType.includes("application/json")) {
-          data = await response.json();
-        } else {
-          data = { sessionId: await response.text() };
-        }
-        console.log("Registration successful!");
-        toast.success("Registration successful! Logging you in...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        login(data.sessionId, email);
-
-        router.push("/");
-      } else {
-        const contentType = response.headers.get("content-type");
-        let errorMessage = "Registration failed";
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } else {
-          errorMessage = await response.text();
-        }
-        console.error("Registration failed:", errorMessage);
-
-        setErrors({ email: errorMessage });
-      }
-    } catch (error) {
-      console.error("An unexpected error occurred:", error);
-      setErrors({ email: "An unexpected error occurred. Please try again." });
-    } finally {
-      setLoading(false);
-    }
   };
-
-  if (authLoading) {
-    return <Loading />;
-  }
 
   return (
     <div>
@@ -159,18 +93,13 @@ export default function Register() {
               )}
             </div>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <span suppressHydrationWarning>Creating account...</span>
-                ) : (
-                  "Create account"
-                )}
+              <Button type="submit" className="w-full">
+                Create account
               </Button>
             </CardFooter>
           </form>
         </CardContent>
       </Card>
-      <ToastContainer />
     </div>
   );
 }

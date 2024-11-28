@@ -1,141 +1,76 @@
-//package com.jsf.backend.service;
-//import com.jsf.backend.model.Club;
-//import com.jsf.backend.model.User;
-//import com.jsf.backend.repository.ClubRepository;
-//import com.jsf.backend.repository.UserRepository;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//import java.util.List;
-//import java.util.Optional;
-//import java.util.UUID;
-//
-//@Service
-//public class UserService {
-//    UserRepository userRepository;
-//    ClubRepository clubRepository;
-//
-//    @Autowired
-//    public UserService(UserRepository userRepository) {
-//        this.userRepository = userRepository;
-//    }
-//
-//    public String authenticate(String email, String password) {
-//        Optional<User> user = userRepository.findByEmail(email);
-//
-//        if (user.isPresent()) {
-//            User student = user.get();
-//
-//            if (password.equals(student.getPassword())) {
-//                return UUID.randomUUID().toString();
-//            }
-//        }
-//        return null;
-//    }
-//
-//
-//    public List<Integer> getFollowedClubsByEmail(String email) {
-//        Optional<User> user = userRepository.findByEmail(email);
-//        return user.map(User::getClubsFollowed).orElse(null);
-//    }
-//
-//    public void register(User user) {
-//        userRepository.save(user);
-//    }
-//
-//
-//    public void addFollowedClub(String email, Integer clubId) {
-//        // Fetch the user by email
-//        Optional<User> userOptional = userRepository.findByEmail(email);
-//        if (userOptional.isEmpty()) {
-//            return; // User not found
-//        }
-//
-//        User user = userOptional.get();
-//
-//        // Fetch the club by ID
-//        Club club = clubRepository.findByClubId(clubId);
-//
-//        // Add the clubId to user's followedClubs if not already added
-//        if (!user.getClubsFollowed().contains(clubId)) {
-//            user.getClubsFollowed().add(clubId);
-//            userRepository.save(user);
-//        }
-//
-//        // Optionally update club's followers list
-//        if (!club.getFollowers().contains(user.getUserId())) {
-//            club.getFollowers().add(user.getUserId());
-//            clubRepository.save(club);
-//        }
-//    }
-//}
 package com.jsf.backend.service;
-
-import com.jsf.backend.model.Club;
 import com.jsf.backend.model.User;
-import com.jsf.backend.repository.ClubRepository;
 import com.jsf.backend.repository.UserRepository;
+import com.jsf.backend.util.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.Date;
 
 @Service
 public class UserService {
+
     private final UserRepository userRepository;
-    private final ClubRepository clubRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @Autowired
-    public UserService(UserRepository userRepository, ClubRepository clubRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenUtil jwtTokenUtil) {
         this.userRepository = userRepository;
-        this.clubRepository = clubRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
 
-    public String authenticate(String email, String password) {
-        Optional<User> user = userRepository.findByEmail(email);
+    public User registerUser(User user) {
+        User newUser = new User();
+        newUser.setEmail(user.getEmail());
+        newUser.setFullName(user.getFullName());
+        newUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        newUser.setCreatedAt(new Date());
+        newUser.setSemester(user.getSemester());
+        newUser.setBranch(user.getBranch());
+        newUser.setTags(user.getTags());
+        newUser.setUsn(user.getUsn());
+        return userRepository.save(newUser);
+    }
 
-        if (user.isPresent()) {
-            User student = user.get();
+    public String generateAccessToken(User user) {
+        return jwtTokenUtil.generateAccessToken(user);
+    }
 
-            if (password.equals(student.getPassword())) {
-                return UUID.randomUUID().toString();
+    public String generateRefreshToken(User user) {
+        return jwtTokenUtil.generateRefreshToken(user);
+    }
+
+    public boolean isEmailTaken(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
+    public boolean isUsnTaken(String usn) {
+        return userRepository.existsByUsn(usn);
+    }
+
+
+    public boolean validateToken(String token) {
+        return jwtTokenUtil.isTokenExpired(token);
+    }
+
+    public String refreshAccessToken(String refreshToken) {
+        if (validateToken(refreshToken)) {
+            String email = jwtTokenUtil.getEmailFromToken(refreshToken);
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                return generateAccessToken(user);
             }
         }
         return null;
     }
 
-    public List<Integer> getFollowedClubsByEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.map(User::getClubsFollowed).orElse(null);
-    }
-
-    public void register(User user) {
-        userRepository.save(user);
-    }
-
-    public void addFollowedClub(String email, Integer clubId) {
-        // Fetch the user by email
-        Optional<User> userOptional = userRepository.findByEmail(email);
-        if (userOptional.isEmpty()) {
-            return; // User not found
+    public User loginUser(String email, String password) {
+        User existingUser = userRepository.findByEmail(email).orElse(null);
+        if (existingUser == null || !passwordEncoder.matches(password, existingUser.getPassword())) {
+            return null; 
         }
-
-        User user = userOptional.get();
-
-        // Fetch the club by ID
-        Club club = clubRepository.findByClubId(clubId);
-
-        // Add the clubId to user's followedClubs if not already added
-        if (!user.getClubsFollowed().contains(clubId)) {
-            user.getClubsFollowed().add(clubId);
-            userRepository.save(user);
-        }
-
-        // Optionally update club's followers list
-        if (!club.getFollowers().contains(user.getUserId())) {
-            club.getFollowers().add(user.getUserId());
-            clubRepository.save(club);
-        }
+        return existingUser;
     }
 }

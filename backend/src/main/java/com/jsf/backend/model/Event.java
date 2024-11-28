@@ -9,15 +9,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document(collection = "events")
+@Document(collection = "Events")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Event {
     @Id
     private ObjectId id;
-    private Integer eventId;
-    private Integer clubId;
+    private ObjectId clubId;
     private String eventName;
     private String description;
     private String banner;

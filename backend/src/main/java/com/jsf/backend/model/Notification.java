@@ -9,19 +9,17 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document(collection = "notification")
+@Document(collection = "Notifications")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Notification {
     @Id
     private ObjectId id;
-    private Integer notificationId;
-    private Integer userId; // User to whom the notification is sent
+    private ObjectId userId;
+    private ObjectId relatedId;
+    private String type;
     private String message;
-    private Date sentAt;
-    private boolean read; // Indicates whether the user has read the notification
-    private boolean deleted; // Indicates whether the user has manually deleted the notification
-    private String eventId;
-    private String clubId;
+    private boolean read;
+    private Date createdAt;
 }

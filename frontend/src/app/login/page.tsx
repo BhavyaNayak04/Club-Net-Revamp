@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Loading from "@/components/ui/loading";
-import useAuth from "@/hooks/useAuth";
-import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const loginSchema = z.object({
@@ -24,26 +20,15 @@ const loginSchema = z.object({
 });
 
 export default function LoginForm() {
-  const { isAuthenticated, login, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/");
-    }
-  }, [isAuthenticated, router]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     const result = loginSchema.safeParse({ email, password });
-
     if (!result.success) {
       const fieldErrors = result.error.format();
       setErrors({
@@ -52,56 +37,7 @@ export default function LoginForm() {
       });
       return;
     }
-
-    setErrors({});
-
-    const credentials = {
-      email,
-      password,
-    };
-
-    try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Login successful!");
-
-        toast.success("Logging you in...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        login(data.sessionId, email);
-
-        router.push("/");
-      } else {
-        const contentType = response.headers.get("content-type");
-        let errorMessage = "Invalid credentials";
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } else {
-          errorMessage = await response.text();
-        }
-
-        setErrors({ email: errorMessage });
-      }
-    } catch (error) {
-      console.error("An unexpected error occurred:", error);
-      setErrors({ email: "An unexpected error occurred. Please try again." });
-    } finally {
-      setLoading(false);
-    }
   };
-
-  if (authLoading) {
-    return <Loading />;
-  }
 
   return (
     <div>
@@ -148,12 +84,8 @@ export default function LoginForm() {
                   <p className="text-red-500 text-sm">{errors.password}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <span suppressHydrationWarning>Logging in...</span>
-                ) : (
-                  "Login"
-                )}
+              <Button type="submit" className="w-full">
+                "Login"
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
@@ -165,7 +97,6 @@ export default function LoginForm() {
           </form>
         </CardContent>
       </Card>
-      <ToastContainer />
     </div>
   );
 }

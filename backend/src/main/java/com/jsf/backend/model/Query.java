@@ -12,14 +12,16 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "queries")
+@Document(collection = "Queries")
 public class Query {
     @Id
     private ObjectId id;
-    private Integer eventId;
-    private String userId;
+    private ObjectId eventId;
+    private ObjectId userId;
     private String queryText;
-    private Date raisedAt;
-    private boolean resolved;
-    private Date resolvedAt;
+    private Date createdAt;
+    private Boolean resolved;
+    private String responseText;
+    private Date respondedAt;
 }
+

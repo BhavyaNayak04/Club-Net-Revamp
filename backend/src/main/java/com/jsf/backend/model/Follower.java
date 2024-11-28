@@ -9,15 +9,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
 
-@Document(collection = "Admins")
+@Document(collection = "Followers")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Admin {
+public class Follower {
     @Id
     private ObjectId id;
-    private String username;
-    private String password;
-    private ObjectId managedClubId;
-    private Date createdAt;
+    private ObjectId userId;
+    private ObjectId clubId;
+    private Date followedAt;
 }
