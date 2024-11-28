@@ -51,13 +51,12 @@ public class UserService {
     }
 
 
-    public boolean validateToken(String token) {
-        return jwtTokenUtil.isTokenExpired(token);
+    public boolean validateToken(String email, String refreshToken) {
+        return !jwtTokenUtil.isTokenInvalidOrExpired(email, refreshToken);
     }
 
-    public String refreshAccessToken(String refreshToken) {
-        if (validateToken(refreshToken)) {
-            String email = jwtTokenUtil.getEmailFromToken(refreshToken);
+    public String refreshAccessToken(String email, String refreshToken) {
+        if (validateToken(email, refreshToken)) {
             User user = userRepository.findByEmail(email).orElse(null);
             if (user != null) {
                 return generateAccessToken(user);
@@ -72,5 +71,9 @@ public class UserService {
             return null; 
         }
         return existingUser;
+    }
+
+    public User getUserDetails(String email) {
+        return userRepository.findByEmail(email).orElse(null);
     }
 }

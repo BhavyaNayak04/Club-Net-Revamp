@@ -6,10 +6,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,12 +57,24 @@ public class UserController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAccessToken(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
-        String newAccessToken = userService.refreshAccessToken(refreshToken);
+        String email = request.get("email");
+        String newAccessToken = userService.refreshAccessToken(email, refreshToken);
         if (newAccessToken == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
         }
         Map<String, String> tokens = new HashMap<>();
         tokens.put("accessToken", newAccessToken);
         return ResponseEntity.ok(tokens);
+    }
+
+    @PostMapping("/details")
+    public ResponseEntity<?> getUserDetails() {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = userService.getUserDetails(email);
+        if (user == null) {
+            System.out.println("User not found for email: " + email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+        return ResponseEntity.ok(user);
     }
 }

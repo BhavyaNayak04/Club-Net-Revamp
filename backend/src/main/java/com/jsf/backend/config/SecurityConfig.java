@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .authorizeRequests(authz -> authz
                         .requestMatchers("/api/user/login", "/api/user/register").permitAll()
                         .requestMatchers("/api/admin/login", "/api/admin/refresh").permitAll()
-                        .requestMatchers("/api/auth/logout").permitAll()
+                        .requestMatchers("/api/auth/logout", "/api/user/refresh").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -41,5 +41,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 }
